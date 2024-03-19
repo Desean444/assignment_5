@@ -1,4 +1,12 @@
 #include <iostream>
+#include<string>
+#include<sstream>
+#include<cmath>
+
+// Author: Desean Newcomb
+// assignment: Calculator
+
+
 
 /*
  * Function: print_error
@@ -24,10 +32,20 @@ std::string prompt_for_arithmetic_expression() {
 	// DO NOT MODIFY THE BELOW PRINT STATEMENT, OR ELSE YOU RISK BREAKING THE
 	// GRADING SCRIPT
 	std::cout << "Enter a valid arithmetic expression: ";
+	std::string expression;
+	while (true) {
+		std::getline(std::cin, expression);
+		if (!expression.empty()) {
+			return expression;
+		} else {
+			std::cout << "That isn't a valid arithmetic expression.";
+		}
+	}
+}
+
 
 	// TODO Complete this function so that it reads the user's line of text
 	// and returns it
-}
 
 /*
  * Function: prompt_for_retry
@@ -43,6 +61,9 @@ std::string prompt_for_retry() {
 	// GRADING SCRIPT
 	std::cout << "Would you like to enter another expression? Enter Y for "
 		"yes: ";
+	std::string response;
+	std::getline(std::cin, response);
+	return response;
 
 	// TODO Complete this function so that it reads the user's line of text
 	// and returns it
@@ -106,8 +127,95 @@ bool is_number(std::string str) {
 	return num_digits > 0;
 }
 
-// TODO Write other functions as you see fit.
+bool is_operator(char c) {
+	return c == '+' || c == '-' || c == '*' || c == '/' || c == '^';
+}
+
+double evaluate_expression(const std::string& expression) {
+	std::istringstream iss(expression);
+	double result = 0.0;
+	char op = '+';
+	double operand = 0.0;
+
+	while (iss >> operand) {
+		if (op == '+')
+			result += operand;
+		else if (op == '-')
+			result -= operand;
+		else if (op == '*')
+			result *= operand;
+		else if (op == '/')
+			result /= operand;
+		else if (op == '^')
+			result = std::pow(result, operand);
+
+		if (!(iss >> op)) 
+			break;
+	}
+
+	return result;
+}
+
+double process_expression(const std::string& expression) {
+	std::ostringstream oss;
+	char prevChar = ' ';
+
+	for (char currentChar : expression) {
+		if (currentChar == ' ') {
+			continue;
+		} else if (!isdigit(currentChar) && currentChar != '.') {
+			if (prevChar != ' ' && prevChar != ')') {
+				oss << ' ';
+			}
+			oss << currentChar;
+			oss << ' ';
+		} else {
+			oss << currentChar;
+		}
+		prevChar = currentChar;
+	}
+
+	std::string processed_expression = oss.str();
+	if (processed_expression.empty()) {
+		print_error();
+		return 0.0;
+	}
+
+	for (size_t i = 1; i < processed_expression.size(); ++i) {
+		if (is_operator(processed_expression[i]) && is_operator(processed_expression[i - 1])) {
+			print_error();
+			return 0.0;
+		}
+	}
+
+	double result = evaluate_expression(processed_expression);
+	return result;
+}
+
 
 int main() {
-	// TODO Complete the program
+	const int MAX_EXPRESSIONS = 100;
+	double expressionResults[MAX_EXPRESSIONS];
+	int numExpressions = 0;
+	std::string userInput;
+	char repeat;
+
+	do {
+		std::string expression = prompt_for_arithmetic_expression();
+		double result = process_expression(expression);
+		if (result != 0.0) {
+			expressionResults[numExpressions++] = result;
+		std::cout << result << std::endl;
+		}
+
+		std::string retry = prompt_for_retry();
+		repeat = (retry.size() > 0 && std::toupper(retry[0]) == 'Y') ? 'Y' : 'N';
+	} while (repeat == 'Y');
+
+	print_history_header();
+	for (int i = 0; i < numExpressions; ++i) {
+		std::cout << expressionResults[i] << std::endl;
+	}
+
+	return 0;
 }
